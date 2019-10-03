@@ -1,41 +1,106 @@
 ---
 title: "Mini-Project 1"
-author: ???
+author: Jane Roarty and Camilla Bendetti
 output: 
   html_document:
     toc: true
     toc_float: true
 ---
-
-
-
-
-\
-\
-
+```{r}
+library(ggplot2)
+library(dplyr) 
+library(caret)  
+library(ggridges)
+set.seed(253)
+```
 
 
 ## Part 1: Ready the data
 
+```{r cache = TRUE}
+airbnb <- read.csv("NYC_airbnb_kaggle.csv")
+nbhd <- read.csv("NYC_nbhd_kaggle.csv")
+head(airbnb)
+head(nbhd)
+```
 
-\
-\
-\
-\
-\
-\
+
+```{r}
+airbnb_full <- airbnb %>%
+  left_join(nbhd, by = c("neighbourhood_cleansed" = "neighbourhood"))
+```
 
 
+```{r}
+airbnb_full <- airbnb_full %>%
+  filter(price < 1000) %>%
+  select(-c(id, latitude, longitude, is_location_exact, availability_30, require_guest_profile_picture, amenities, calendar_updated, bed_type, host_response_rate, host_response_time))
+
+airbnb_sample <- airbnb_full %>%
+  sample_n(5000)
+
+head(airbnb_full)
+```
+
+We took out id, latitude, longitude, is_location_exact, availability_30, and require_guest_profile_picture. We took out id because it is just an indexed label without information, latitude and longitude are captured more meaningfully in neighborhood and borough, and we didn't think availability_30 and require_guest_profile_picture gave significant information that predicted price. 
 
 ## Part 2: Analyze
 
 
-\
-\
-\
-\
-\
-\
+```{r}
+#We can see a general positive linear looking trend likely because the more people the listing accomodates, the larger the listing is so it is more expensive
+airbnb_sample %>%
+  ggplot(aes(x = factor(accommodates), y = price)) +
+  geom_boxplot() + 
+  theme_minimal()
+
+#The lower price listings probably have a quicker turnover of guests so there might be more reviews so this might not be the best predictor - it also does not say whether they are good or bad reviews so number of reviews does not necessarily mean more expensive
+airbnb_sample %>%
+  ggplot(aes(x = number_of_reviews, y = price)) +
+  geom_point() + 
+  theme_minimal()
+
+airbnb_sample %>%
+  ggplot(aes(x = factor(bathrooms), y = price)) +
+  geom_boxplot() + 
+  theme_minimal()
+
+#We can see here than manhattan is the most expensive because it is more tourist heavy. Brooklyn is also boujee which is why it is slightly more expensive than the other boroughs.
+airbnb_sample %>%
+  ggplot(aes(x = neighbourhood_group, y = price)) +
+  geom_boxplot() + 
+  theme_minimal()
+```
+
+Building the model:
+```{r}
+
+# With our original we exaughsted our vector so we went back and took out some more predictors including amenities, calendar_updated, bed_type, host_response_rate, and host_response_time
+lasso_model <- train(
+    price ~ .,
+    data = airbnb_sample,
+    method = "glmnet",
+    tuneGrid = data.frame(alpha = 1, lambda = 7.564633),
+    trControl = trainControl(method = "cv", number = 10, selectionFunction = 'best'),
+    metric = "MAE",
+    na.action = na.omit
+)
+```
+
+
+```{r}
+plot(lasso_model$finalModel, xvar = "lambda", label = TRUE, col = rainbow(20))
+
+lasso_model$results
+```
+
+```{r}
+model_coef <- coef(lasso_model$finalModel, lasso_model$lambda)
+predictors <- model_coef@Dimnames[[1]][model_coef@i + 1][-1]
+airbnb_sample <- airbnb_sample %>% 
+  select(price, predictors)
+model_coef
+```
 
 
 
