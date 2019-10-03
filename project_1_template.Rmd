@@ -1,0 +1,59 @@
+---
+title: "Mini-Project 1"
+author: ???
+output: 
+  html_document:
+    toc: true
+    toc_float: true
+---
+
+
+
+
+\
+\
+
+
+
+## Part 1: Ready the data
+
+
+\
+\
+\
+\
+\
+\
+
+
+
+## Part 2: Analyze
+
+
+\
+\
+\
+\
+\
+\
+
+
+
+## Part 3: Summarize
+
+
+
+
+\
+\
+\
+\
+\
+\
+
+
+
+## Part 4: Contributions
+
+
+
